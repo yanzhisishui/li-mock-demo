@@ -12,6 +12,8 @@
         <module>eureka-server</module>
         <module>feign-mock-client</module>
     </modules>
+    <packaging>pom</packaging>
+
     <properties>
         <maven.compiler.source>22</maven.compiler.source>
         <maven.compiler.target>22</maven.compiler.target>
