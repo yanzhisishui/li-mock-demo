@@ -19,7 +19,7 @@ import java.util.*;
 /**
  * Feign 调用的时候传token到下游
  */
-@Component
+//@Component
 public class FeignRequestInterceptor implements RequestInterceptor {
     List<Class<?>> BASE_PARAM_TYPE_LIST = new ArrayList<>() {{
         add(String.class);
