@@ -50,7 +50,7 @@ public class FeignRequestInterceptor implements RequestInterceptor {
             return;
         }
         if (mockConfigItemList.size() > 1) {
-            log.info("FeignRequestInterceptor#apply open mockConfigItem size greater than 1,url-{}", targetService + uri);
+            log.warn("FeignRequestInterceptor#apply open mockConfigItem size greater than 1,url-{}", targetService + uri);
         }
 
         /**
