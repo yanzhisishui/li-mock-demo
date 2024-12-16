@@ -11,7 +11,7 @@
     <modules>
         <module>eureka-server</module>
         <module>feign-mock-client</module>
-        <module>feign-mock-server</module>
+        <module>feign-mock-server2</module>
     </modules>
     <packaging>pom</packaging>
 

@@ -1,6 +1,8 @@
 package com.example.feignmockclient.config;
 
 import com.alibaba.fastjson2.JSON;
+import com.example.feignmockclient.entity.MockConfigItem;
+import com.example.feignmockclient.service.MockConfigService;
 import feign.Client;
 import feign.Request;
 import feign.Response;
@@ -10,30 +12,50 @@ import org.springframework.cloud.openfeign.loadbalancer.FeignBlockingLoadBalance
 import org.springframework.cloud.openfeign.loadbalancer.LoadBalancerFeignRequestTransformer;
 import org.springframework.http.HttpStatus;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-
 public class CustomFeignBlockingLoadBalancerClient extends FeignBlockingLoadBalancerClient {
-    public CustomFeignBlockingLoadBalancerClient(Client delegate, LoadBalancerClient loadBalancerClient, LoadBalancerClientFactory loadBalancerClientFactory, List<LoadBalancerFeignRequestTransformer> transformers) {
+
+
+    private final MockConfigService mockConfigService;
+
+    public CustomFeignBlockingLoadBalancerClient(Client delegate, LoadBalancerClient loadBalancerClient, LoadBalancerClientFactory loadBalancerClientFactory,
+                                                 List<LoadBalancerFeignRequestTransformer> transformers, MockConfigService mockConfigService) {
         super(delegate, loadBalancerClient, loadBalancerClientFactory, transformers);
+        this.mockConfigService = mockConfigService;
     }
 
-
+    /**
+     * 自定义
+     * */
     @Override
     public Response execute(Request request, Request.Options options) throws IOException {
-        // 自定义实现 execute 方法
-        Map<String, Collection<String>> headers = request.headers();
-//        if(headers.containsKey("x-mock-flag")) {
-//            //表示需要 Mock
-//            Map<String,Object> result = new HashMap<>();
-//            result.put("flag", headers.get("x-mock-flag"));
-//            String jsonString = JSON.toJSONString(result);
-//            return Response.builder().request(request).status(HttpStatus.OK.value()).body(jsonString.getBytes()).build();
-//        }
+
+        Map<String, Collection<String>> requestHeaders = request.headers();
+        if(requestHeaders.containsKey("x-mock-item-id")){
+            //表示需要 mock
+            Collection<String> strings = requestHeaders.get("x-mock-item-id");
+            String mockItemId = strings.stream().findFirst().orElseThrow();
+            MockConfigItem configItem = mockConfigService.getMockConfigItem(Integer.parseInt(mockItemId));
+
+            Map<String, Collection<String>> headers = new HashMap<>();
+            headers.put("connection",List.of("keep-alive"));
+            headers.put("content-type",List.of("application/json"));
+            headers.put("keep-alive",List.of("timeout=60"));
+            headers.put("transfer-encoding",List.of("chunked"));
+
+            byte[] bytes = configItem.getMockResponse().getBytes();
+            return Response.builder().status(HttpStatus.OK.value()).request(request)
+                    .protocolVersion(Request.ProtocolVersion.HTTP_1_1)
+                    .headers(headers)
+                    .body(new ByteArrayInputStream(bytes),bytes.length)
+                    .build();
+        }
         return super.execute(request, options);
     }
 }

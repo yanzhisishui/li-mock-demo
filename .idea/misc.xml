@@ -8,6 +8,7 @@
         <option value="$PROJECT_DIR$/eureka-server/pom.xml" />
         <option value="$PROJECT_DIR$/feign-mock-client/pom.xml" />
         <option value="$PROJECT_DIR$/feign-mock-server/pom.xml" />
+        <option value="$PROJECT_DIR$/feign-mock-server2/pom.xml" />
       </list>
     </option>
   </component>
