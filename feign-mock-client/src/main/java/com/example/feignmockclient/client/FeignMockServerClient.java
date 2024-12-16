@@ -10,7 +10,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 
-@FeignClient(value = "feign-mock-server2",configuration = {
+@FeignClient(value = "feign-mock-server",configuration = {
          FeignConfiguration.class
 })
 public interface FeignMockServerClient {

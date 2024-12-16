@@ -54,7 +54,8 @@ public class FeignRequestInterceptor implements RequestInterceptor {
         }
 
         /**
-         * 方法请求体 method (Object arg0,Object arg1,Object arg...)
+         * 方法请求体 method (Object arg0,Object arg1,Object
+         * arg...)
          * requestBody.arg0
          * requestBody.arg1
          * requestBody.arg...
