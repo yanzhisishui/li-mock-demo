@@ -1,6 +1,6 @@
 package com.example.feignmockclient.config;
 
-import com.example.feignmockclient.interceptor.FeignRequestInterceptor;
+import com.example.feignmockclient.config.interceptor.FeignRequestInterceptor;
 import com.example.feignmockclient.service.MockConfigService;
 import feign.Client;
 import feign.RequestInterceptor;
