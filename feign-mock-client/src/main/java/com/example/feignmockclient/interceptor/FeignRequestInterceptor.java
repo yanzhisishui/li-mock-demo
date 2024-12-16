@@ -2,32 +2,31 @@ package com.example.feignmockclient.interceptor;
 
 import com.alibaba.fastjson2.JSON;
 import com.alibaba.fastjson2.JSONObject;
+import com.alibaba.fastjson2.TypeReference;
+import com.example.feignmockclient.entity.MockConfig;
+import com.example.feignmockclient.entity.MockConfigItem;
+import com.example.feignmockclient.mapper.MockConfigMapper;
+import com.example.feignmockclient.service.MockConfigService;
 import feign.RequestInterceptor;
 import feign.RequestTemplate;
-import jakarta.servlet.http.HttpServletRequest;
-import org.springframework.stereotype.Component;
-import org.springframework.util.StringUtils;
-import org.springframework.web.context.request.RequestAttributes;
-import org.springframework.web.context.request.RequestContextHolder;
-import org.springframework.web.context.request.ServletRequestAttributes;
+import org.springframework.expression.ExpressionParser;
+import org.springframework.expression.spel.standard.SpelExpressionParser;
+import org.springframework.expression.spel.support.StandardEvaluationContext;
+import org.springframework.util.CollectionUtils;
 
-import java.lang.reflect.Field;
 import java.lang.reflect.Method;
-import java.lang.reflect.Type;
+import java.lang.reflect.Parameter;
 import java.util.*;
 
 /**
- * Feign 调用的时候传token到下游
+ * Feign 调用的时候请求拦截器
  */
-//@Component
 public class FeignRequestInterceptor implements RequestInterceptor {
-    List<Class<?>> BASE_PARAM_TYPE_LIST = new ArrayList<>() {{
-        add(String.class);
-        add(Integer.class);
-        add(Long.class);
-        add(int.class);
-        add(long.class);
-    }};
+    private final MockConfigService mockConfigService;
+
+    public FeignRequestInterceptor (MockConfigService mockConfigService) {
+        this.mockConfigService = mockConfigService;
+    }
 
     @Override
     public void apply(RequestTemplate template) {
@@ -38,50 +37,94 @@ public class FeignRequestInterceptor implements RequestInterceptor {
         String uri = template.path();                // /rcs/apply/query
         //serverName + uri 已经可以定义唯一接口
 
-        //mock 匹配参数
-        Map<String, String> map = new HashMap<>();
-        map.put("gateId", "C017");
-        map.put("applyNo", "applyNo");
+        MockConfig mockConfig = mockConfigService.getMockConfig(mockConfigService.CURRENT_SERVICE_NAME, name, uri);
+        if(mockConfig == null) {
+            //没有配置 mock 直接返回
+            return;
+        }
+        List<MockConfigItem> mockConfigItemList = mockConfigService.queryOpenMockConfigItemList(mockConfig.getId());
+        if(CollectionUtils.isEmpty(mockConfigItemList)) {
+            //mock 配置项为空直接返回
+            return;
+        }
+        Map<String,Object> requestBody = new HashMap<>();
+
+        //查询参数
+        Map<String, Collection<String>> queries = template.queries();
+        queries.forEach((k,v) -> {
+            Object o = ((List) v).get(0);
+            requestBody.put(k,o);
+        });
+
+
+
         //请求参数
         Method method = template.methodMetadata().method();
-        Class<?>[] parameterTypes = method.getParameterTypes();
-         Class<?> parameterType = parameterTypes[0];
         byte[] body = template.body();
-        String str  = new String(body);
+        if(body != null) {
+            Parameter[] parameters = method.getParameters();
+            if(parameters.length > 1){
+                throw new RuntimeException("Feign Client 接口 body 参数个数不应该超过 1");
+            }
+            String json = new String(body);
+            Map<String,Object> map = JSON.parseObject(json, JSONObject.class);
+            String bodyParamName = parameters[0].getName();
+            requestBody.put(bodyParamName,map);
+        }
 
-        //原始参数
-        JSONObject jsonObject = JSON.parseObject(str);
+        //解析完毕之后
+        Map<String,Object> jsonMap = new HashMap<>();
+        jsonMap.put("body",requestBody);
 
-        if (BASE_PARAM_TYPE_LIST.contains(parameterType)) {
-            System.out.println("基本类型");
-        } else {
-            //对象类型，判断 map 里面的是否全匹配 jsonObject
-            boolean match = matchParam(map,jsonObject);
-            template.request().header("x-mock-flag", "token");
-            template.header("x-mock-flag", "token");
-            Map<String, Collection<String>> headers = template.request().headers();
-            System.out.println(match);
+
+
+        // 初始化表达式解析器
+        ExpressionParser parser = new SpelExpressionParser();
+        // 初始化评估上下文
+        StandardEvaluationContext context = new StandardEvaluationContext();
+        // 将JSON映射到上下文
+        context.setVariable("body", jsonMap);
+
+        for (MockConfigItem item : mockConfigItemList) {
+            List<String> expressionList = JSON.parseObject(item.getExpressionListStr(), new TypeReference<>() {});
+            //表达式列表必须全部匹配才行
+            boolean allMatch = expressionList.stream().allMatch(expression -> {
+                Boolean match;
+                try {
+                    match = parser.parseExpression(transfer(expression)).getValue(context, Boolean.class);
+                } catch (Exception e) {
+                    match = false;
+                }
+                return match;
+            });
+            if(allMatch){
+                //如果已经找到了匹配的 mock 配置，就可以添加mock标记，然后退出循环了
+                template.header("x-mock-item-id",item.getId().toString());
+                break;
+            }
         }
 
     }
 
-    /**
-     * @param map 匹配规则，目标
-     * @param jsonObject 原始参数
-     * 判断 map 里面的是否全匹配 jsonObject
-     * */
 
-    private boolean matchParam(Map<String, String> map, JSONObject jsonObject) {
-        for (String k : jsonObject.keySet()) {
-            String originValue = jsonObject.getString(k);
-            String targetValue = map.get(k);//获取原始参数的 key
-            if(targetValue != null){
-                if(!targetValue.equals(originValue)){
-                    return false;
-                }
+    /**
+     * 将 body.arg0.x.x == 'x' 转换成 #body['arg0']['x']['x'] == 'x'
+     * */
+    public static String transfer(String originExpression){
+        String[] first = originExpression.split("==");
+        if(first.length > 2){
+            throw new RuntimeException("表达式错误");
+        }
+        String[] leftArr = first[0].trim().split("\\.");
+        StringBuilder leftExpr = new StringBuilder();
+        for (int i = 0; i < leftArr.length; i++) {
+            if(i == 0){
+                leftExpr.append("#").append(leftArr[i]);
+            } else {
+                leftExpr.append("['").append(leftArr[i]).append("']");
             }
         }
-       return true;
+        return leftExpr + " == " +first[1];
     }
 
 }

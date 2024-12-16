@@ -16,7 +16,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 })
 public interface FeignMockServerClient {
     @GetMapping("/rcs/apply/query")
-    Object rcsApplyQuery(@RequestParam("applyNo") String applyNo);
+    Object rcsApplyQuery(@RequestParam("applyNo") String applyNo,@RequestParam("memberId") String memberId);
 
     @PostMapping("/rcs/apply")
     Object rcsApply(@RequestBody RcsApplyRequest request);

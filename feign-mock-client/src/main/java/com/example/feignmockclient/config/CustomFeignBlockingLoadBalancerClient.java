@@ -1,11 +1,11 @@
 package com.example.feignmockclient.config;
 
 import com.alibaba.fastjson2.JSON;
-import com.example.feignmockclient.mapper.MockConfigMapper;
+import com.example.feignmockclient.entity.MockConfigItem;
+import com.example.feignmockclient.service.MockConfigService;
 import feign.Client;
 import feign.Request;
 import feign.Response;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cloud.client.loadbalancer.LoadBalancerClient;
 import org.springframework.cloud.loadbalancer.support.LoadBalancerClientFactory;
 import org.springframework.cloud.openfeign.loadbalancer.FeignBlockingLoadBalancerClient;
@@ -22,12 +22,12 @@ import java.util.Map;
 public class CustomFeignBlockingLoadBalancerClient extends FeignBlockingLoadBalancerClient {
 
 
-    private MockConfigMapper mockConfigMapper;
+    private final MockConfigService mockConfigService;
 
     public CustomFeignBlockingLoadBalancerClient(Client delegate, LoadBalancerClient loadBalancerClient, LoadBalancerClientFactory loadBalancerClientFactory,
-                                                 List<LoadBalancerFeignRequestTransformer> transformers, MockConfigMapper mockConfigMapper) {
+                                                 List<LoadBalancerFeignRequestTransformer> transformers, MockConfigService mockConfigService) {
         super(delegate, loadBalancerClient, loadBalancerClientFactory, transformers);
-        this.mockConfigMapper = mockConfigMapper;
+        this.mockConfigService = mockConfigService;
     }
 
     /**
@@ -35,24 +35,26 @@ public class CustomFeignBlockingLoadBalancerClient extends FeignBlockingLoadBala
      * */
     @Override
     public Response execute(Request request, Request.Options options) throws IOException {
-        Map<String, Collection<String>> headers = new HashMap<>();
-        headers.put("connection",List.of("keep-alive"));
-        headers.put("content-type",List.of("application/json"));
-        headers.put("keep-alive",List.of("timeout=60"));
-        headers.put("transfer-encoding",List.of("chunked"));
-        System.out.println(111);
-        Map<String,Object> map = new HashMap<>();
-        map.put("code",200);
-        map.put("message","SUCCESS!");
-        String jsonString = JSON.toJSONString(map);
-        byte[] bytes = jsonString.getBytes();
-        Response build = Response.builder().status(HttpStatus.OK.value()).request(request)
-                .protocolVersion(Request.ProtocolVersion.HTTP_1_1)
-                .headers(headers)
-                .body(new ByteArrayInputStream(bytes),bytes.length)
-                .build();
-        if(true){
-            return build;
+
+        Map<String, Collection<String>> requestHeaders = request.headers();
+        if(requestHeaders.containsKey("x-mock-item-id")){
+            //表示需要 mock
+            Collection<String> strings = requestHeaders.get("x-mock-item-id");
+            String mockItemId = strings.stream().findFirst().orElseThrow();
+            MockConfigItem configItem = mockConfigService.getMockConfigItem(Integer.parseInt(mockItemId));
+
+            Map<String, Collection<String>> headers = new HashMap<>();
+            headers.put("connection",List.of("keep-alive"));
+            headers.put("content-type",List.of("application/json"));
+            headers.put("keep-alive",List.of("timeout=60"));
+            headers.put("transfer-encoding",List.of("chunked"));
+
+            byte[] bytes = configItem.getMockResponse().getBytes();
+            return Response.builder().status(HttpStatus.OK.value()).request(request)
+                    .protocolVersion(Request.ProtocolVersion.HTTP_1_1)
+                    .headers(headers)
+                    .body(new ByteArrayInputStream(bytes),bytes.length)
+                    .build();
         }
         return super.execute(request, options);
     }
