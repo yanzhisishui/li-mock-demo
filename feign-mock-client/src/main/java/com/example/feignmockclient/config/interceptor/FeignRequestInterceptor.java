@@ -35,11 +35,11 @@ public class FeignRequestInterceptor implements RequestInterceptor {
         // 从header获取X-token
 
 
-        String name = template.feignTarget().name(); //feign-mock-server
+        String targetService = template.feignTarget().name(); //feign-mock-server
         String uri = template.path();                // /rcs/apply/query
         //serverName + uri 已经可以定义唯一接口
 
-        MockConfig mockConfig = mockConfigService.getMockConfig(mockConfigService.CURRENT_SERVICE_NAME, name, uri);
+        MockConfig mockConfig = mockConfigService.getMockConfig(mockConfigService.CURRENT_SERVICE_NAME, targetService, uri);
         if (mockConfig == null) {
             //没有配置 mock 直接返回
             return;
@@ -50,7 +50,7 @@ public class FeignRequestInterceptor implements RequestInterceptor {
             return;
         }
         if (mockConfigItemList.size() > 1) {
-            log.info("FeignRequestInterceptor#apply open mockConfigItem size greater than 1,url-{}", name + uri);
+            log.info("FeignRequestInterceptor#apply open mockConfigItem size greater than 1,url-{}", targetService + uri);
         }
 
         /**
@@ -92,6 +92,7 @@ public class FeignRequestInterceptor implements RequestInterceptor {
                 try {
                     match = parser.parseExpression(transfer(expression)).getValue(context, Boolean.class);
                 } catch (Exception e) {
+                    log.error("FeignRequestInterceptor#apply expression error url-{},expression-{}", targetService + uri, expression, e);
                     match = false;
                 }
                 return match;
