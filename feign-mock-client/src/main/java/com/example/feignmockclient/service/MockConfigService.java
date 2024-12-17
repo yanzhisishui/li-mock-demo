@@ -22,10 +22,10 @@ public class MockConfigService {
     private MockConfigMapper mockConfigMapper;
     @Autowired
     private MockConfigItemMapper mockConfigItemMapper;
-    public MockConfig getMockConfig(String initiatorService,String targetService,String uri) {
+    public MockConfig getMockConfig(String initiatorService,String targetService,List<String> uriList) {
        return mockConfigMapper.selectOne(Wrappers.<MockConfig>lambdaQuery().eq(MockConfig::getInitiatorService,initiatorService)
                 .eq(MockConfig::getTargetService,targetService)
-                .eq(MockConfig::getUri,uri));
+                .in(MockConfig::getUri,uriList));
     }
 
     public List<MockConfigItem> queryOpenMockConfigItemList(Integer id) {

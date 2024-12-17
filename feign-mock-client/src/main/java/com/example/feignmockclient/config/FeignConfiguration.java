@@ -2,6 +2,7 @@ package com.example.feignmockclient.config;
 
 import com.example.feignmockclient.config.interceptor.FeignRequestInterceptor;
 import com.example.feignmockclient.service.MockConfigService;
+import com.example.feignmockclient.strategy.FeignClientRequestResolveStrategy;
 import feign.Client;
 import feign.RequestInterceptor;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -18,7 +19,9 @@ import java.util.List;
 public class FeignConfiguration {
 
     @Autowired
-    MockConfigService mockConfigService;
+    private MockConfigService mockConfigService;
+    @Autowired
+    private List<FeignClientRequestResolveStrategy> requestResolveStrategyList;
     /**
      * 自定义负载均衡调用客户端
      * */
@@ -34,6 +37,6 @@ public class FeignConfiguration {
 
    @Bean
     public RequestInterceptor feignRequestInterceptor(){
-       return new FeignRequestInterceptor(mockConfigService);
+       return new FeignRequestInterceptor(mockConfigService,requestResolveStrategyList);
    }
 }

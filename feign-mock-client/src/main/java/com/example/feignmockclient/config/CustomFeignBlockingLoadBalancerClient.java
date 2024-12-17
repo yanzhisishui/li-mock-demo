@@ -1,6 +1,7 @@
 package com.example.feignmockclient.config;
 
 import com.alibaba.fastjson2.JSON;
+import com.example.feignmockclient.consts.MockKeyConst;
 import com.example.feignmockclient.entity.MockConfigItem;
 import com.example.feignmockclient.service.MockConfigService;
 import feign.Client;
@@ -37,12 +38,13 @@ public class CustomFeignBlockingLoadBalancerClient extends FeignBlockingLoadBala
     public Response execute(Request request, Request.Options options) throws IOException {
 
         Map<String, Collection<String>> requestHeaders = request.headers();
-        if(requestHeaders.containsKey("x-mock-item-id")){
+        if(requestHeaders.containsKey(MockKeyConst.MATCH_MOCK_CONFIG_ITEM_ID)){
             //表示需要 mock
-            Collection<String> strings = requestHeaders.get("x-mock-item-id");
-            String mockItemId = strings.stream().findFirst().orElseThrow();
+            Collection<String> headerValueList = requestHeaders.get(MockKeyConst.MATCH_MOCK_CONFIG_ITEM_ID);
+            String mockItemId = headerValueList.stream().findFirst().orElseThrow();
             MockConfigItem configItem = mockConfigService.getMockConfigItem(Integer.parseInt(mockItemId));
 
+            //返回 mock 的响应
             Map<String, Collection<String>> headers = new HashMap<>();
             headers.put("connection",List.of("keep-alive"));
             headers.put("content-type",List.of("application/json"));

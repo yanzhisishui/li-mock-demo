@@ -5,10 +5,7 @@ import com.example.feignmockclient.client.request.RcsApplyRequest;
 import com.example.feignmockclient.config.FeignConfiguration;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.cloud.openfeign.SpringQueryMap;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.*;
 
 @FeignClient(value = "feign-mock-server",configuration = {
          FeignConfiguration.class
@@ -21,5 +18,10 @@ public interface FeignMockServerClient {
     Object rcsApply(@RequestBody RcsApplyRequest request);
 
     @GetMapping("/rcs/apply/query-map")
-    Object rcsApplyQuery(@SpringQueryMap RcsApplyRequest request);
+    Object rcsApplyQueryMap(@SpringQueryMap RcsApplyRequest request);
+
+    @GetMapping(value = {"/rcs/apply/{applyNo}/{testParam}"})
+    Object rcsApplyQueryPathVariable(@PathVariable String applyNo,@PathVariable String testParam);
+
+
 }

@@ -30,5 +30,16 @@ public class TestController {
         return client.rcsApply(request);
     }
 
+    @GetMapping("/test3")
+    public Object test3(){
+        RcsApplyRequest request = new RcsApplyRequest();
+        request.setApplyNo("applyNo");
+        request.setGateId("C017");
+        return client.rcsApplyQueryMap(request);
+    }
 
+    @GetMapping("/test4")
+    public Object test4(){
+        return client.rcsApplyQueryPathVariable("applyNo","C017");
+    }
 }
