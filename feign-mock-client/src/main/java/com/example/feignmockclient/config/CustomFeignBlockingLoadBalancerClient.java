@@ -50,6 +50,7 @@ public class CustomFeignBlockingLoadBalancerClient extends FeignBlockingLoadBala
             headers.put("content-type",List.of("application/json"));
             headers.put("keep-alive",List.of("timeout=60"));
             headers.put("transfer-encoding",List.of("chunked"));
+            headers.put("mock-response-flag",List.of(Boolean.TRUE.toString()));
 
             byte[] bytes = configItem.getMockResponse().getBytes();
             return Response.builder().status(HttpStatus.OK.value()).request(request)
