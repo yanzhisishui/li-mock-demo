@@ -16,6 +16,9 @@ import java.util.stream.Collectors;
 public interface FeignClientRequestResolveStrategy {
     boolean supports(RequestTemplate template);
 
+    /**
+     * 获取本次请求真实的 uri
+     * */
     default List<String> originUri(RequestTemplate template) {
         Method method = template.methodMetadata().method();
         if (method.isAnnotationPresent(RequestMapping.class)) {
@@ -34,7 +37,7 @@ public interface FeignClientRequestResolveStrategy {
             GetMapping annotation = method.getAnnotation(GetMapping.class);
             return Arrays.stream(annotation.value()).collect(Collectors.toList());
         }
-        throw new RuntimeException("");
+        throw new RuntimeException("不存在的 FeignClient 请求");
     }
 
     ;
