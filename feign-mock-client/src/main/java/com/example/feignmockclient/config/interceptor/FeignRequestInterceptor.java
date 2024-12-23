@@ -1,7 +1,5 @@
 package com.example.feignmockclient.config.interceptor;
 
-import com.alibaba.fastjson2.JSON;
-import com.alibaba.fastjson2.TypeReference;
 import com.example.feignmockclient.consts.MockKeyConst;
 import com.example.feignmockclient.entity.MockConfig;
 import com.example.feignmockclient.entity.MockConfigItem;
@@ -97,8 +95,7 @@ public class FeignRequestInterceptor implements RequestInterceptor {
             throw new RuntimeException("暂不支持复杂表达式，仅支持 全部 && 或者全部 ||");
         }
         boolean containsAnd = originExpression.contains("&&");
-        return transferByAOperator(originExpression, containsAnd ? "&&" : "\\|\\|");
-
+        return transferByOperator(originExpression, containsAnd ? "&&" : "\\|\\|");
     }
 
     public static void main(String[] args) {
@@ -106,7 +103,7 @@ public class FeignRequestInterceptor implements RequestInterceptor {
         System.out.println(transferToSpel(demo));
     }
 
-    private static String transferByAOperator(String originExpression, String operator) {
+    private static String transferByOperator(String originExpression, String operator) {
         List<String> singleExpression = new ArrayList<>();
         for (String item : originExpression.split(operator)) {
             String[] first = item.split("==");
