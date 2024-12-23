@@ -28,7 +28,7 @@ public class MockConfigItem {
     /**
      * 表达式集合 且
      * */
-    private String expressionListStr;
+    private String expression;
     private String mockResponse;
 
     /**

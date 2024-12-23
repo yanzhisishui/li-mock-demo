@@ -45,7 +45,7 @@ CREATE TABLE `mock_config_item` (
                                     `id` int NOT NULL AUTO_INCREMENT,
                                     `config_id` int NOT NULL,
                                     `status` tinyint(1) NOT NULL DEFAULT '0',
-                                    `expression_list_str` text,
+                                    `expression` varchar(1024),
                                     `mock_response` text,
                                     `creator` varchar(255) DEFAULT NULL,
                                     `crtTime` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -55,5 +55,7 @@ CREATE TABLE `mock_config_item` (
 ) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 
-INSERT INTO `yaorao-mall-order`.`mock_config_item` (`id`, `config_id`, `status`, `expression_list_str`, `mock_response`, `creator`, `crtTime`, `uptTime`, `deleted`) VALUES (1, 1, 0, '[\"body.request.applyNo == \'applyNo\'\"]', '{\"code\":1,\"message\":\"mockMessage\"}', '孙玉超', '2024-12-16 20:35:29', '2024-12-16 20:37:19', 0);
-
+INSERT INTO `mock_platform`.`mock_config_item` (`id`, `config_id`, `status`, `expression`, `mock_response`, `creator`, `crt_time`, `upt_time`, `deleted`) VALUES (1, 2, 1, 'body.request.applyNo == \'applyNo\' && body.request.gateId == \'C017\'', '{\"code\":2,\"message\":\"me2\"}', '孙玉超', '2024-12-17 14:23:56', '2024-12-23 15:44:57', 0);
+INSERT INTO `mock_platform`.`mock_config_item` (`id`, `config_id`, `status`, `expression`, `mock_response`, `creator`, `crt_time`, `upt_time`, `deleted`) VALUES (2, 1, 1, '[\"body.applyNo == \'TQYJKN20240113191341383\'\"]', '{\"code\":1,\"message\":\"me1\"}', '孙玉超', '2024-12-17 15:00:13', '2024-12-17 16:43:35', 0);
+INSERT INTO `mock_platform`.`mock_config_item` (`id`, `config_id`, `status`, `expression`, `mock_response`, `creator`, `crt_time`, `upt_time`, `deleted`) VALUES (3, 3, 1, '[\"body.request.applyNo == \'applyNo\'\"]', '{\"code\":3,\"message\":\"me3\"}', '孙玉超', '2024-12-17 15:51:03', '2024-12-17 16:41:50', 0);
+INSERT INTO `mock_platform`.`mock_config_item` (`id`, `config_id`, `status`, `expression`, `mock_response`, `creator`, `crt_time`, `upt_time`, `deleted`) VALUES (4, 4, 1, '[\"body.applyNo == \'applyNo\'\",\"body.testParam == \'C017\'\"]', '{\"code\":4,\"message\":\"me4\"}', '孙玉超', '2024-12-17 16:54:15', '2024-12-18 15:38:56', 0);

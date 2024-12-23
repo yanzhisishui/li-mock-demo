@@ -17,6 +17,7 @@ import org.springframework.expression.spel.support.StandardEvaluationContext;
 import org.springframework.util.CollectionUtils;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * Feign 调用的时候请求拦截器
@@ -66,20 +67,15 @@ public class FeignRequestInterceptor implements RequestInterceptor {
         context.setVariable("body", response.getRequestBody());
 
         for (MockConfigItem item : mockConfigItemList) {
-            List<String> expressionList = JSON.parseObject(item.getExpressionListStr(), new TypeReference<>() {
-            });
-            //表达式列表必须全部匹配才行
-            boolean allMatch = expressionList.stream().allMatch(expression -> {
-                Boolean match;
-                try {
-                    match = parser.parseExpression(transferToSpel(expression)).getValue(context, Boolean.class);
-                } catch (Exception e) {
-                    log.error("FeignRequestInterceptor#apply expression error url-{},expression-{}", targetService + uri, expression, e);
-                    match = false;
-                }
-                return match;
-            });
-            if (allMatch) {
+
+            Boolean match;
+            try {
+                match = parser.parseExpression(transferToSpel(item.getExpression())).getValue(context, Boolean.class);
+            } catch (Exception e) {
+                log.error("FeignRequestInterceptor#apply expression error url-{},expression-{}", targetService + uri, item.getExpression(), e);
+                match = false;
+            }
+            if (match != null && match) {
                 //如果已经找到了匹配的 mock 配置，就可以添加mock标记，然后退出循环了
                 template.header(MockKeyConst.MATCH_MOCK_CONFIG_ITEM_ID, item.getId().toString());
                 break;
@@ -90,22 +86,46 @@ public class FeignRequestInterceptor implements RequestInterceptor {
 
     /**
      * 将 body.arg0.x.x == 'x' 转换成 #body['arg0']['x']['x'] == 'x'
+     * <p>
+     * "body.request.applyNo == 'applyNo' && body.request.gateId == 'C017'"
+     * 变成
+     * "#body['request']['applyNo'] == 'applyNo' && #body['request']['gateId'] == 'C017'"
      */
     public static String transferToSpel(String originExpression) {
-        String[] first = originExpression.split("==");
-        if (first.length > 2) {
-            throw new RuntimeException("表达式错误");
+
+        if (originExpression.contains("&&") && originExpression.contains("||")) {
+            throw new RuntimeException("暂不支持复杂表达式，仅支持 全部 && 或者全部 ||");
         }
-        String[] leftArr = first[0].trim().split("\\.");
-        StringBuilder leftExpr = new StringBuilder();
-        for (int i = 0; i < leftArr.length; i++) {
-            if (i == 0) {
-                leftExpr.append("#").append(leftArr[i]);
-            } else {
-                leftExpr.append("['").append(leftArr[i]).append("']");
+        boolean containsAnd = originExpression.contains("&&");
+        return transferByAOperator(originExpression, containsAnd ? "&&" : "\\|\\|");
+
+    }
+
+    public static void main(String[] args) {
+        String demo = "body.request.applyNo == 'applyNo' && body.request.gateId == 'C017'";
+        System.out.println(transferToSpel(demo));
+    }
+
+    private static String transferByAOperator(String originExpression, String operator) {
+        List<String> singleExpression = new ArrayList<>();
+        for (String item : originExpression.split(operator)) {
+            String[] first = item.split("==");
+            if (first.length > 2) {
+                throw new RuntimeException("表达式错误");
             }
+            String[] leftArr = first[0].trim().split("\\.");
+            StringBuilder leftExpr = new StringBuilder();
+            for (int i = 0; i < leftArr.length; i++) {
+                if (i == 0) {
+                    leftExpr.append("#").append(leftArr[i]);
+                } else {
+                    leftExpr.append("['").append(leftArr[i]).append("']");
+                }
+            }
+            String result = leftExpr + " == " + first[1];
+            singleExpression.add(result);
         }
-        return leftExpr + " == " + first[1];
+        return singleExpression.stream().collect(Collectors.joining(" " + (operator.contains("&&") ? "&&" : "||") + " "));
     }
 
 }
