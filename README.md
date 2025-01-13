@@ -1,1 +1,1 @@
-### mock 平台基于 springcloud openfeign
+### mock 平台基于 springcloud openfeign ，可自定义条件表达式
